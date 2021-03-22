@@ -16,6 +16,9 @@ var score;
 var lives;
 var state = "prelaod";
 var btn;
+var colors;
+var level;
+var brickCount;
 
 window.onload = function() {
     document.body.appendChild(canvas);
@@ -59,6 +62,7 @@ var render = function() {
     context.font = 'bold 48px Courier New';
     context.fillText(score,width-context.measureText(score).width,height-5);
     context.fillText(lives,5,height-5);
+    context.fillText(level, width/2 - context.measureText(level).width/2, height-5);
     context.fillStyle = "#000000"
 };
 
@@ -83,12 +87,37 @@ function init(){
     for(i = 0; i< 16; i++){
         bricks[i] = new Array(16);
         for(j=0; j< 16; j++){
-            bricks[i][j] = new Brick(i*64,j*24);
+            var num = Math.floor((Math.random() * 50));
+            if(num >= 5){
+                num = 0;
+            }
+            bricks[i][j] = new Brick(i*64,j*24, num);
         }
     }
+    brickCount = bricks.length * bricks[0].length;
     score = 0;
-    lives = 1;
+    lives = 5;
+    level = 1;
+    colors = new Array(5);
+    colors[0] = '#6495ED';
+    colors[1] = '#DC143C';
+    colors[2] = '#7FFF00';
+    colors[3] = '#8A2BE2';
+    colors[4] = '#8B008B';
     state = "game";
+}
+
+function nextLevel(){
+    bricks = new Array(16);
+    for(i = 0; i< 16; i++){
+        bricks[i] = new Array(16);
+        for(j=0; j< 16; j++){
+            bricks[i][j] = new Brick(i*64,j*24, Math.floor((Math.random() * 5)));
+        }
+    }
+    brickCount = bricks.length * bricks[0].length;
+    lives = 6 - level;
+    level += 1;
 }
 
 function onClick(){
@@ -113,7 +142,8 @@ window.addEventListener("keyup", function(event){
 });
 
 //////////////////////////// All the objects
-function Ball(x,y){
+function Ball(x,y,aType){
+    this.type = aType;
     this.x = x;
     this.y = y;
     this.x_speed =0;
@@ -136,7 +166,7 @@ Ball.prototype.update = function(paddle,brickArray){
       this.x_speed = -this.x_speed;
     }
   
-    if(this.y < 0 || this.y > 768) { // a point was scored
+    if(this.y > 768 ) { // a point was scored
       //alert("point scored" + this.y);
       this.x_speed = 0;
       this.y_speed = 3;
@@ -145,7 +175,11 @@ Ball.prototype.update = function(paddle,brickArray){
       lives -= 1;
       if(lives == 0){
           endGame(score);
-      }
+        }
+    }
+
+    if(this.y < 0) {
+        this.y_speed = 3;
     }
 
     if(this.y <400){
@@ -157,8 +191,17 @@ Ball.prototype.update = function(paddle,brickArray){
                 }
                 else if(this.checkBounds(brick.x,brick.y,brick.width,brick.height)){
                     //alert("hit a brick: " + brick.x+" , "+brick.y + ";" + this.x + " , " + this.y);
-                    this.onCollision(brickArray[i][j]);
+                    this.onCollision(brickArray[i][j],player);
                     brickArray[i][j] = null;
+                    brickCount -= 1;
+                    if(brickCount == 0){
+                        if(level == 5){
+                            endGame(score);
+                        }
+                        else{
+                            nextLevel();
+                        }
+                    }
                 }
             }
         }
@@ -173,11 +216,45 @@ Ball.prototype.update = function(paddle,brickArray){
     }
 };
 
-Ball.prototype.onCollision = function(brick){
-    this.y_speed = 3;
-    this.x_speed = this.x_speed*-1/2 + Math.floor((Math.random()*5)-3);
-    score += brick.value + this.x_speed + this.y_speed;
-    score = parseInt(score);
+Ball.prototype.onCollision = function(brick,player){
+    if(brick.type == 0){
+        this.y_speed = 3;
+        this.x_speed = this.x_speed*-1/2 + Math.floor((Math.random()*5)-3);
+        score += brick.value + this.x_speed + this.y_speed;
+        score = parseInt(score);
+    }
+    else if(brick.type == 1){
+        this.y_speed = 3;
+        this.x_speed = 0;
+        score += brick.value + this.x_speed + this.y_speed;
+        score = parseInt(score);
+    }
+    else if(brick.type == 2){
+        this.y_speed = 6;
+        this.x_speed = this.x_speed*-1/2 + Math.floor((Math.random()*5)-3);
+        score += brick.value + this.x_speed + this.y_speed;
+        score = parseInt(score);
+    }
+    else if(brick.type == 3){
+        this.y_speed = 3;
+        this.x_speed = this.x_speed*-1/2 + Math.floor((Math.random()*5)-3);
+        score += brick.value + this.x_speed + this.y_speed;
+        score = parseInt(score);
+        player.paddle.width += 5;
+    }
+    else if(brick.type == 4){
+        this.y_speed = 3;
+        this.x_speed = this.x_speed*-1/2 + Math.floor((Math.random()*5)-3);
+        score += brick.value + this.x_speed + this.y_speed + 1000;
+        score = parseInt(score);
+    }
+    else if(brick.type == 5){
+        this.y_speed = 3;
+        this.x_speed = this.x_speed*-1/2 + Math.floor((Math.random()*5)-3);
+        score += brick.value + this.x_speed*2 + this.y_speed;
+        score = parseInt(score);
+        player.paddle.x_speed += 5;
+    }
 };
 
 Ball.prototype.render = function() {
@@ -259,7 +336,8 @@ Paddle.prototype.move = function(x, y) {
     }
   }
 
-function Brick(x,y){
+function Brick(x,y,brickType){
+    this.type = brickType
     this.x = x;
     this.y = y;
     this.width = 64;
@@ -268,7 +346,7 @@ function Brick(x,y){
 }
 
 Brick.prototype.render = function(){
-    context.fillStyle = "#DAA520";
+    context.fillStyle = colors[this.type];
     context.fillRect(this.x,this.y,this.width,this.height);
     context.fillStyle = "#000000"
     context.strokeStyle = "#FFD700";

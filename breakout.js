@@ -24,9 +24,6 @@ window.onload = function() {
 };
 
 var step = function() {
-    if(state == "ended"){
-        return;
-    }
     update();
     render();
     animate(step);
@@ -76,7 +73,7 @@ function endScreen(){
     btn.innerHTML = "Play Again";
     document.body.appendChild(btn);
     btn.addEventListener("click", onClick);
-    btn.style="position:absolute; left:" + width/2 + "px; top:" + height/2 + "px;";
+    btn.style="position:absolute; left:" + (width/2 + 50) + "px; top:" + (height/2 +100) + "px;";
 }
 
 function init(){
